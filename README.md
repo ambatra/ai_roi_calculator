@@ -18,6 +18,14 @@ Two front ends over one shared model:
 
 ---
 
+## New here? Start with the worked example
+
+[**examples/README.md**](examples/README.md) walks the whole calculator through one realistic scenario - a fintech triaging 180,000 support tickets a month - and explains every number in plain English. Run it in one line:
+
+```bash
+PYTHONPATH=src python3 examples/support_triage.py
+```
+
 ## Quick start
 
 ```bash
@@ -107,6 +115,7 @@ Wire your production logs (or a `litellm` success/failure callback) into this sh
 ```
 src/roi_tracker/   engine + four modules + CLI
 dashboard/         self-contained HTML calculator
+examples/          worked scenario (support-ticket triage) + walkthrough
 data/              sample telemetry
 tests/             pytest suite
 reports/           generated reports (git-ignored by default)
