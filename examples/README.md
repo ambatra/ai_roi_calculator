@@ -14,6 +14,12 @@ Leadership is weighing three options:
 
 Which one, and if AI, how much of the work should it take?
 
+## The same scenario in the dashboard
+
+![Dashboard snapshot](assets/dashboard.png)
+
+*Full-page render of `dashboard/index.html` (also as [PDF](assets/dashboard.pdf)). Every number below appears live on this page.*
+
 ## Run it
 
 ```bash

@@ -9,6 +9,12 @@ Two front ends over one shared model:
 - **`dashboard/index.html`** - a self-contained, no-build **calculator**. Every input is a slider. Move one and the risk-adjusted P&L, the three-way cost comparison, the break-even chart, the recommended split, the qualitative verdict, and the executive report all recompute live. Open the file in any browser.
 - **`roi_tracker`** - a zero-dependency Python engine for projections *and* real telemetry ingestion, with a one-page McKinsey-style executive report and the Human-vs-AI comparison.
 
+## The dashboard
+
+![AI ROI Calculator dashboard - Human vs AI + HITL](examples/assets/dashboard.png)
+
+*Live snapshot of `dashboard/index.html`. Full-page render also available as [PDF](examples/assets/dashboard.pdf).*
+
 ## What it answers
 
 1. **Human vs AI + HITL** - full cost per transaction and per month for all three operating models, cheapest flagged.
