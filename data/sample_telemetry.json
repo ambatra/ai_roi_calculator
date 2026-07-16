@@ -1,0 +1,12 @@
+[
+  {"model": "gpt-5-mini", "input_tokens": 850, "output_tokens": 210, "sent_to_hitl": false, "flagged_incident": false},
+  {"model": "claude-opus-4-8", "input_tokens": 2400, "output_tokens": 780, "sent_to_hitl": true, "remediation_cost": 8.0, "flagged_incident": false},
+  {"model": "gemini-2.5-flash", "input_tokens": 620, "output_tokens": 140, "sent_to_hitl": false, "flagged_incident": false},
+  {"model": "ollama-open-llm", "input_tokens": 500, "output_tokens": 120, "sent_to_hitl": false, "flagged_incident": false},
+  {"model": "gpt-5", "input_tokens": 3100, "output_tokens": 900, "sent_to_hitl": true, "remediation_cost": 8.0, "flagged_incident": true, "var_loss": 25000.0},
+  {"model": "gpt-5-mini", "input_tokens": 700, "output_tokens": 180, "sent_to_hitl": false, "flagged_incident": false},
+  {"model": "gemini-2.5-pro", "input_tokens": 2600, "output_tokens": 640, "sent_to_hitl": false, "flagged_incident": false},
+  {"model": "gpt-5-mini", "input_tokens": 900, "output_tokens": 240, "sent_to_hitl": false, "flagged_incident": false},
+  {"model": "gemini-2.5-flash", "input_tokens": 480, "output_tokens": 110, "sent_to_hitl": false, "flagged_incident": false},
+  {"model": "claude-opus-4-8", "input_tokens": 2800, "output_tokens": 820, "sent_to_hitl": false, "flagged_incident": false}
+]

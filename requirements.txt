@@ -1,0 +1,7 @@
+# Core engine has zero hard runtime dependencies (stdlib only), so it runs
+# anywhere. litellm is optional but recommended: it provides the live,
+# community-maintained token pricing database used by the Dynamic Cost Fetcher.
+litellm>=1.0.0
+
+# Dev / test
+pytest>=7.0.0

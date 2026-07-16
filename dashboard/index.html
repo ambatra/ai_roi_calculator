@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI ROI Tracker - Value Realization Engine</title>
+<style>
+  :root{
+    --bg:#faf9f6; --panel:#ffffff; --ink:#191817; --muted:#6b6864;
+    --line:#e7e3dc; --accent:#1a1a1a; --pos:#1f6f43; --neg:#a3341f;
+    --pos-bg:#eef5f0; --neg-bg:#f8ede9; --chip:#f2efe9;
+    --radius:14px; --mono:"SF Mono",ui-monospace,"Roboto Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#141311;--panel:#1d1b18;--ink:#f2efe9;--muted:#9d998f;
+      --line:#2c2926;--accent:#f2efe9;--pos:#5fbf89;--neg:#e08163;
+      --pos-bg:#18251d;--neg-bg:#2a1c17;--chip:#26231f;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+  header.top{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:28px}
+  header.top h1{font-size:26px;margin:0 0 4px;letter-spacing:-.02em;font-weight:650}
+  header.top p{margin:0;color:var(--muted);font-size:14px}
+  .src{display:inline-block;margin-top:10px;font-family:var(--mono);font-size:12px;
+    background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:3px 11px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px}
+  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+  .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+    margin:0 0 4px;font-weight:600}
+  .panel .sub{font-size:12.5px;color:var(--muted);margin:0 0 16px}
+  section.group{margin-bottom:26px}
+  section.group:last-child{margin-bottom:0}
+  .glabel{font-size:13px;font-weight:650;letter-spacing:.01em;margin:0 0 2px;
+    display:flex;align-items:center;gap:7px}
+  .gdesc{font-size:12px;color:var(--muted);margin:0 0 14px;max-width:52ch}
+  .ctrl{margin-bottom:15px}
+  .ctrl .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .ctrl label{font-size:13px}
+  .ctrl .hint{font-size:11.5px;color:var(--muted);display:block;margin-top:1px;max-width:46ch}
+  .valbox{font-family:var(--mono);font-size:13px;border:1px solid var(--line);background:var(--bg);
+    color:var(--ink);border-radius:8px;padding:3px 7px;width:104px;text-align:right}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;margin:9px 0 2px;
+    background:var(--line);border-radius:3px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:3px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);
+    cursor:pointer;border:3px solid var(--panel)}
+  table.models{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  table.models th{text-align:right;font-weight:600;color:var(--muted);font-size:11px;
+    text-transform:uppercase;letter-spacing:.05em;padding:0 0 8px}
+  table.models th:first-child{text-align:left}
+  table.models td{padding:5px 0;border-top:1px solid var(--line)}
+  table.models td:first-child{font-weight:600}
+  table.models .tier{font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:400}
+  table.models input{font-family:var(--mono);font-size:12px;width:66px;text-align:right;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:2px 5px}
+  table.models td.num{text-align:right}
+  .pick{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:10px;color:var(--pos)}
+  /* results */
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  .kpi{border:1px solid var(--line);border-radius:12px;padding:14px 15px;background:var(--bg)}
+  .kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+  .kpi .v{font-size:23px;font-weight:660;letter-spacing:-.02em;font-family:var(--mono)}
+  .kpi .u{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .kpi.pos .v{color:var(--pos)} .kpi.neg .v{color:var(--neg)}
+  .kpi.big{grid-column:span 2}
+  .wf{margin:18px 0 6px}
+  .wf .bar{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12.5px}
+  .wf .bar .nm{width:130px;color:var(--muted);flex:none}
+  .wf .bar .track{flex:1;height:16px;background:var(--chip);border-radius:5px;position:relative;overflow:hidden}
+  .wf .bar .fill{height:100%;border-radius:5px}
+  .wf .bar .amt{width:78px;text-align:right;font-family:var(--mono);flex:none}
+  .report{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:6px}
+  .report h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 6px}
+  .report h3:first-child{margin-top:0}
+  .report p,.report li{font-size:13px;margin:3px 0}
+  .report ul{margin:4px 0 0;padding-left:18px}
+  .report .lede{color:var(--muted);font-size:12px;border-bottom:1px solid var(--line);padding-bottom:10px}
+  .report b.pos{color:var(--pos)} .report b.neg{color:var(--neg)}
+  .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  button.btn{font-family:var(--sans);font-size:12.5px;font-weight:600;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);border-radius:9px;padding:8px 14px;cursor:pointer}
+  button.btn:hover{border-color:var(--accent)}
+  .foot{margin-top:26px;color:var(--muted);font-size:11.5px;text-align:center}
+  code{font-family:var(--mono);font-size:12px;background:var(--chip);padding:1px 5px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>AI Operational Value Realization Engine</h1>
+    <p>Every input is a lever. Move a slider, watch the risk-adjusted P&amp;L recompute. This is the same math as the Python engine (<code>roi_tracker</code>), in the browser.</p>
+    <span class="src">pricing: editable &middot; auto-filled from litellm when the engine runs</span>
+  </header>
+
+  <div class="grid">
+    <!-- ================= INPUTS ================= -->
+    <div class="panel">
+      <h2>Inputs</h2>
+      <p class="sub">The CFO interview, as sliders. Hover any value box to type an exact number.</p>
+
+      <section class="group">
+        <p class="glabel">1 &middot; Legacy baseline</p>
+        <p class="gdesc">What the work costs <em>today</em>, before AI - and how much of it there is.</p>
+
+        <div class="ctrl" data-c>
+          <div class="row"><label>Legacy manual cost / transaction</label>
+            <input class="valbox" data-num="legacy" type="number" step="0.01"></div>
+          <input type="range" data-range="legacy" min="0.2" max="50" step="0.1">
+          <span class="hint">Fully-burdened human rate x minutes per task. The cost AI has to beat.</span>
+        </div>
+
+        <div class="ctrl" data-c>
+          <div class="row"><label>Monthly transaction volume</label>
+            <input class="valbox" data-num="volume" type="number" step="1000"></div>
+          <input type="range" data-range="volume" min="1000" max="2000000" step="1000">
+          <span class="hint">How many transactions per month. Scales every per-unit saving.</span>
+        </div>
+      </section>
+
+      <section class="group">
+        <p class="glabel">2 &middot; Model pricing &amp; routing</p>
+        <p class="gdesc">Live token prices per 1M tokens. The router sends simple work to the cheapest fallback and complex work to the cheapest flagship. <span class="pick">&#9679; = auto-selected</span></p>
+        <table class="models">
+          <thead><tr><th>Model</th><th>Input $/1M</th><th>Output $/1M</th></tr></thead>
+          <tbody id="modelRows"></tbody>
+        </table>
+      </section>
+
+      <section class="group">
+        <p class="glabel">3 &middot; Task mix &amp; token size</p>
+        <p class="gdesc">How hard the average task is, and how many tokens it burns.</p>
+
+        <div class="ctrl" data-c>
+          <div class="row"><label>Complex-task share (routed to flagship)</label>
+            <input class="valbox" data-num="share" type="number" step="1"></div>
+          <input type="range" data-range="share" min="0" max="100" step="1">
+          <span class="hint">Share of traffic hard enough to need a frontier model. The rest goes cheap.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>Avg input tokens / txn</label>
+            <input class="valbox" data-num="intok" type="number" step="50"></div>
+          <input type="range" data-range="intok" min="100" max="8000" step="50">
+          <span class="hint">Prompt size. Bigger prompts cost more per call.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>Avg output tokens / txn</label>
+            <input class="valbox" data-num="outtok" type="number" step="25"></div>
+          <input type="range" data-range="outtok" min="50" max="4000" step="25">
+          <span class="hint">Answer size. Output tokens usually cost more than input.</span>
+        </div>
+      </section>
+
+      <section class="group">
+        <p class="glabel">4 &middot; Infrastructure &amp; build cost</p>
+        <p class="gdesc">The overhead beyond the API bill - retrieval, and paying back the one-time build.</p>
+
+        <div class="ctrl" data-c>
+          <div class="row"><label>Vector DB retrieval / txn</label>
+            <input class="valbox" data-num="vdb" type="number" step="0.0001"></div>
+          <input type="range" data-range="vdb" min="0" max="0.02" step="0.0001">
+          <span class="hint">Cost each time the system looks something up in its knowledge store.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>Total CapEx (build + fine-tuning)</label>
+            <input class="valbox" data-num="capex" type="number" step="1000"></div>
+          <input type="range" data-range="capex" min="0" max="1000000" step="1000">
+          <span class="hint">One-time money already spent building the system. Sunk cost to earn back.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>Amortize CapEx over (transactions)</label>
+            <input class="valbox" data-num="amort" type="number" step="100000"></div>
+          <input type="range" data-range="amort" min="100000" max="20000000" step="100000">
+          <span class="hint">Spread the build cost across this many txns. CapEx / this = build cost per txn.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>Maintenance OpEx / month</label>
+            <input class="valbox" data-num="opex" type="number" step="500"></div>
+          <input type="range" data-range="opex" min="0" max="200000" step="500">
+          <span class="hint">Ongoing run cost: monitoring, retraining, on-call, licences.</span>
+        </div>
+      </section>
+
+      <section class="group">
+        <p class="glabel">5 &middot; Risk (the Hallucination Tax)</p>
+        <p class="gdesc">AI is not free of consequence. Two risks eat into savings and get deducted here.</p>
+
+        <div class="ctrl" data-c>
+          <div class="row"><label>Value at Risk / catastrophic incident</label>
+            <input class="valbox" data-num="var" type="number" step="1000"></div>
+          <input type="range" data-range="var" min="0" max="500000" step="1000">
+          <span class="hint">Financial damage of one bad hallucination or compliance failure reaching production.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>Incident rate (per 100,000 outputs)</label>
+            <input class="valbox" data-num="incid" type="number" step="0.1"></div>
+          <input type="range" data-range="incid" min="0" max="200" step="0.1">
+          <span class="hint">How often such a catastrophic failure slips through. Rare but expensive.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>HITL review cost / flagged output</label>
+            <input class="valbox" data-num="hitlc" type="number" step="0.5"></div>
+          <input type="range" data-range="hitlc" min="0" max="60" step="0.5">
+          <span class="hint">Cost of a human reviewing an output a guardrail flagged.</span>
+        </div>
+        <div class="ctrl" data-c>
+          <div class="row"><label>HITL rate (% of outputs reviewed)</label>
+            <input class="valbox" data-num="hitlr" type="number" step="0.5"></div>
+          <input type="range" data-range="hitlr" min="0" max="100" step="0.5">
+          <span class="hint">Share of outputs sent to a human queue instead of auto-shipped.</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= RESULTS ================= -->
+    <div class="panel">
+      <h2>Risk-adjusted P&amp;L</h2>
+      <p class="sub">Live. Recomputes on every change.</p>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="wf" id="waterfall"></div>
+
+      <div class="report" id="report"></div>
+
+      <div class="actions">
+        <button class="btn" id="copyReport">Copy executive report (Markdown)</button>
+        <button class="btn" id="reset">Reset to baseline</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">AI Operational Value Realization Engine &middot; browser calculator mirrors <code>python -m roi_tracker</code> &middot; MIT</p>
+</div>
+
+<script>
+// ---- baseline (mirrors config.FinancialBaseline defaults) -----------------
+const BASE = {
+  legacy:4.20, volume:100000, share:30, intok:1200, outtok:400,
+  vdb:0.0004, capex:180000, amort:5000000, opex:12000,
+  var:25000, incid:5, /* per 100k => 0.00005 */ hitlc:8, hitlr:5
+};
+// ---- models (mirrors config.DEFAULT_MODELS; prices editable) --------------
+const MODELS = [
+  {name:"claude-opus-4-8", tier:"flagship", in:15.0, out:75.0},
+  {name:"gpt-5",           tier:"flagship", in:10.0, out:30.0},
+  {name:"gemini-2.5-pro",  tier:"flagship", in:1.25, out:10.0},
+  {name:"ollama-open-llm", tier:"fallback", in:0.0,  out:0.0},
+  {name:"gpt-5-mini",      tier:"fallback", in:0.25, out:2.0},
+  {name:"gemini-2.5-flash",tier:"fallback", in:0.30, out:2.50},
+];
+let S = {...BASE};
+
+// ---- build model pricing table -------------------------------------------
+const modelRows = document.getElementById('modelRows');
+function buildModelRows(){
+  modelRows.innerHTML='';
+  MODELS.forEach((m,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${m.name} <span class="tier">${m.tier}</span> <span class="pick" id="pick${i}"></span></td>
+      <td class="num"><input type="number" step="0.05" data-mi="${i}" data-mk="in" value="${m.in}"></td>
+      <td class="num"><input type="number" step="0.05" data-mi="${i}" data-mk="out" value="${m.out}"></td>`;
+    modelRows.appendChild(tr);
+  });
+  modelRows.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const i=+inp.dataset.mi, k=inp.dataset.mk;
+      MODELS[i][k]=parseFloat(inp.value)||0; recompute();
+    });
+  });
+}
+
+// ---- wire sliders <-> number boxes ---------------------------------------
+function wire(){
+  document.querySelectorAll('[data-range]').forEach(r=>{
+    const key=r.dataset.range;
+    const num=document.querySelector(`[data-num="${key}"]`);
+    r.value=S[key]; num.value=S[key];
+    r.addEventListener('input',()=>{S[key]=parseFloat(r.value); num.value=r.value; recompute();});
+    num.addEventListener('input',()=>{S[key]=parseFloat(num.value)||0; r.value=S[key]; recompute();});
+  });
+}
+
+// ---- math (mirrors ledger.py / risk_pricer.py / engine.py) ----------------
+const money=x=>{ if(!isFinite(x))return'n/a'; const s=x<0?'-':''; x=Math.abs(x);
+  if(x>=1e6)return s+'$'+(x/1e6).toFixed(2)+'M';
+  if(x>=1e3)return s+'$'+(x/1e3).toFixed(1)+'K';
+  return s+'$'+x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});};
+const cents=x=>'$'+x.toLocaleString(undefined,{minimumFractionDigits:4,maximumFractionDigits:4});
+
+function blended(m){return 0.5*m.in + 0.5*m.out;} // per-1M blended, for picking cheapest
+function cheapest(tier){return MODELS.filter(m=>m.tier===tier).reduce((a,b)=>blended(b)<blended(a)?b:a);}
+function apiCost(m){return (S.intok*m.in + S.outtok*m.out)/1e6;}
+
+function compute(){
+  const flag=cheapest('flagship'), fall=cheapest('fallback');
+  const amortPerTxn = S.amort>0 ? S.capex/S.amort : 0;
+  const opexPerTxn  = S.volume>0 ? S.opex/S.volume : 0;
+  const infra = S.vdb + amortPerTxn + opexPerTxn;
+  const cpoFlag = apiCost(flag)+infra;
+  const cpoFall = apiCost(fall)+infra;
+  const share = Math.min(Math.max(S.share/100,0),1);
+  const cpo = share*cpoFlag + (1-share)*cpoFall;
+
+  const incidRate = S.incid/1e5;                 // per-100k -> fraction
+  const hitlRate  = S.hitlr/100;
+  const incidentTax = incidRate*S.var;
+  const hitlTax     = hitlRate*S.hitlc;
+  const tax = incidentTax+hitlTax;
+
+  const gross = S.legacy - cpo;
+  const net   = gross - tax;
+  const monthlyNet = net*S.volume;
+  const monthlyGross = gross*S.volume;
+  const monthlyRun = cpo*S.volume;
+  const roi = cpo>0 ? net/cpo*100 : Infinity;
+
+  const varNet = S.legacy - (cpo-opexPerTxn) - tax;
+  const breakeven = varNet>0 ? S.opex/varNet : Infinity;
+  const hitlReclaimed = (1-hitlRate)*S.legacy*S.volume;
+
+  return {flag,fall,cpo,cpoFlag,cpoFall,share,infra,amortPerTxn,opexPerTxn,
+    incidentTax,hitlTax,tax,gross,net,monthlyNet,monthlyGross,monthlyRun,roi,
+    breakeven,hitlReclaimed, apiFlag:apiCost(flag), apiFall:apiCost(fall)};
+}
+
+// ---- render ---------------------------------------------------------------
+function recompute(){
+  const r=compute();
+  // auto-selected model markers
+  MODELS.forEach((m,i)=>{document.getElementById('pick'+i).textContent =
+    (m===r.flag||m===r.fall)?'●':'';});
+
+  const roiTxt = isFinite(r.roi)? (r.roi).toLocaleString(undefined,{maximumFractionDigits:0})+'%' : '∞';
+  const beTxt  = isFinite(r.breakeven)? Math.round(r.breakeven).toLocaleString()+' /mo' : 'not reachable';
+  const good = r.net>0;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi big ${good?'pos':'neg'}"><div class="k">Net saving / month (risk-adjusted)</div>
+      <div class="v">${money(r.monthlyNet)}</div><div class="u">${money(r.monthlyNet*12)} / year after tax &amp; OpEx</div></div>
+    <div class="kpi ${good?'pos':'neg'}"><div class="k">Net ROI</div><div class="v">${roiTxt}</div>
+      <div class="u">net benefit per $ of run cost</div></div>
+    <div class="kpi"><div class="k">Break-even volume</div><div class="v" style="font-size:17px">${beTxt}</div>
+      <div class="u">covers monthly OpEx</div></div>
+    <div class="kpi"><div class="k">Fully burdened CPO</div><div class="v" style="font-size:18px">${cents(r.cpo)}</div>
+      <div class="u">vs ${cents(S.legacy)} human</div></div>
+    <div class="kpi ${good?'pos':'neg'}"><div class="k">Net saving / txn</div><div class="v" style="font-size:18px">${cents(r.net)}</div>
+      <div class="u">gross ${cents(r.gross)} - tax ${cents(r.tax)}</div></div>`;
+
+  // waterfall: legacy -> CPO -> tax -> net
+  const max=Math.max(S.legacy,0.0001);
+  const bar=(nm,amt,cls,frac)=>`<div class="bar"><span class="nm">${nm}</span>
+    <span class="track"><span class="fill" style="width:${Math.min(Math.abs(frac)*100,100)}%;background:${cls}"></span></span>
+    <span class="amt">${cents(amt)}</span></div>`;
+  document.getElementById('waterfall').innerHTML =
+    bar('Legacy cost', S.legacy, 'var(--muted)', S.legacy/max)+
+    bar('- AI CPO', -r.cpo, 'var(--neg)', r.cpo/max)+
+    bar('- Hallucination tax', -r.tax, 'var(--neg)', r.tax/max)+
+    bar('= Net / txn', r.net, good?'var(--pos)':'var(--neg)', r.net/max);
+
+  renderReport(r,roiTxt,beTxt,good);
+}
+
+function renderReport(r,roiTxt,beTxt,good){
+  const sharePct=(r.share*100).toFixed(0);
+  const rec = r.net<=0
+    ? `<b class="neg">Do not scale yet.</b> Net saving per transaction is non-positive. Route more simple tasks to the fallback tier and cut the Hallucination Tax with tighter guardrails before adding volume.`
+    : `<b class="pos">Scale.</b> Unit economics are positive at ${cents(r.net)}/txn. Primary lever: ${r.cpo>r.tax?'shift more traffic to the fallback tier':'invest in guardrails to shrink the Hallucination Tax'}. Grow past break-even to amortize CapEx faster, and wire real telemetry (litellm callbacks + guardrail flags) to replace assumed rates with measured ones.`;
+  document.getElementById('report').innerHTML=`
+    <p class="lede">One-page executive brief &middot; volume ${S.volume.toLocaleString()} txns/mo &middot; ${sharePct}% complex &rarr; <code>${r.flag.name}</code>, rest &rarr; <code>${r.fall.name}</code></p>
+    <h3>Executive Summary</h3>
+    <ul><li>Net ROI: <b class="${good?'pos':'neg'}">${roiTxt}</b> per $ of AI run cost.</li>
+    <li>Break-even: ${beTxt==='not reachable'?'not reachable at current unit economics':beTxt}.</li>
+    <li>Total realized savings: <b class="${good?'pos':'neg'}">${money(r.monthlyNet)}/mo</b> (${money(r.monthlyNet*12)}/yr).</li></ul>
+    <h3>Unit Economics (CPO)</h3>
+    <ul><li>Legacy human cost: ${cents(S.legacy)}/txn.</li>
+    <li>Fully burdened AI cost: ${cents(r.cpo)}/txn &mdash; API ${cents(r.share*r.apiFlag+(1-r.share)*r.apiFall)} + infra ${cents(r.infra)}.</li>
+    <li>Gross saving: ${cents(r.gross)}/txn (${(r.gross/S.legacy*100).toFixed(0)}% cheaper).</li></ul>
+    <h3>Risk-Adjusted Adjustments</h3>
+    <ul><li>Hallucination Tax: <b class="neg">-${cents(r.tax)}/txn</b> (incident ${cents(r.incidentTax)} + HITL ${cents(r.hitlTax)}).</li>
+    <li>Maintenance OpEx: -${cents(r.opexPerTxn)}/txn. Amortized CapEx: -${cents(r.amortPerTxn)}/txn.</li>
+    <li>Net after risk: <b class="${good?'pos':'neg'}">${cents(r.net)}/txn</b> &rarr; ${money(r.monthlyNet)}/mo.</li></ul>
+    <h3>Velocity &amp; Throughput</h3>
+    <ul><li>Capital reclaimed from HITL reduction: ${money(r.hitlReclaimed)}/mo of review capacity freed.</li>
+    <li>Monthly AI run cost: ${money(r.monthlyRun)} for ${S.volume.toLocaleString()} txns.</li></ul>
+    <h3>Strategic Recommendation</h3><p>${rec}</p>`;
+}
+
+// ---- markdown export (mirrors report.py structure) ------------------------
+function reportMarkdown(){
+  const r=compute();
+  const roiTxt=isFinite(r.roi)?r.roi.toFixed(1)+'%':'positive (unbounded)';
+  const beTxt=isFinite(r.breakeven)?Math.round(r.breakeven).toLocaleString()+' txns/month':'not reachable at current unit economics';
+  const rec = r.net<=0
+    ? '- **Do not scale yet.** Net saving per transaction is non-positive. Route more simple tasks to the fallback tier and tighten guardrails before adding volume.'
+    : `- **Scale.** Unit economics are positive at ${cents(r.net)}/txn. Lever: ${r.cpo>r.tax?'shift more traffic to fallback':'shrink the Hallucination Tax'}. Grow past break-even; wire real telemetry to measure rates.`;
+  return `# AI Operational Value Realization
+
+_One-page executive brief. Volume basis: ${S.volume.toLocaleString()} txns/month._
+
+## Executive Summary
+- **Net ROI:** ${roiTxt} per dollar of AI run cost.
+- **Break-even:** ${beTxt}.
+- **Total realized savings:** **${money(r.monthlyNet)}/month** (${money(r.monthlyNet*12)}/yr).
+
+## Unit Economics (CPO)
+- **Legacy human cost:** ${cents(S.legacy)}/txn.
+- **Fully burdened AI cost (CPO):** ${cents(r.cpo)}/txn.
+- **Gross saving:** ${cents(r.gross)}/txn (${(r.gross/S.legacy*100).toFixed(0)}% cheaper).
+- Mix: ${(r.share*100).toFixed(0)}% complex -> ${r.flag.name}, rest -> ${r.fall.name}.
+
+## Risk-Adjusted Adjustments
+- **Hallucination Tax:** -${cents(r.tax)}/txn (incident ${cents(r.incidentTax)} + HITL ${cents(r.hitlTax)}).
+- **Maintenance OpEx:** -${cents(r.opexPerTxn)}/txn.
+- **Net saving after risk:** **${cents(r.net)}/txn** -> ${money(r.monthlyNet)}/month.
+
+## Velocity & Throughput
+- **Capital reclaimed from HITL reduction:** ${money(r.hitlReclaimed)}/month.
+- **Monthly AI run cost:** ${money(r.monthlyRun)} for ${S.volume.toLocaleString()} txns.
+
+## Strategic Recommendation
+${rec}
+`;
+}
+
+// ---- actions --------------------------------------------------------------
+document.getElementById('copyReport').addEventListener('click',e=>{
+  navigator.clipboard.writeText(reportMarkdown()).then(()=>{
+    e.target.textContent='Copied ✓'; setTimeout(()=>e.target.textContent='Copy executive report (Markdown)',1400);
+  });
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  S={...BASE}; MODELS.forEach((m,i)=>{const d=[
+    {in:15,out:75},{in:10,out:30},{in:1.25,out:10},{in:0,out:0},{in:0.25,out:2},{in:0.30,out:2.50}][i];
+    m.in=d.in;m.out=d.out;});
+  buildModelRows(); wire(); recompute();
+});
+
+// ---- init -----------------------------------------------------------------
+buildModelRows(); wire(); recompute();
+</script>
+</body>
+</html>
