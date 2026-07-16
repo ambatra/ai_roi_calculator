@@ -80,10 +80,16 @@ def main() -> None:
         from dataclasses import asdict
 
         print(json.dumps(asdict(result), indent=2, default=str))
-    elif args.report:
-        print(ExecutiveReport.render(result))
     else:
         print(ExecutiveReport.render(result))
+        print()
+        print(
+            ExecutiveReport.comparison_block(
+                engine.compare_approaches(),
+                engine.recommend_hybrid(),
+                engine.breakeven_month(),
+            )
+        )
 
 
 if __name__ == "__main__":

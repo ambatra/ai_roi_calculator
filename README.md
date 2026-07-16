@@ -1,13 +1,20 @@
-# AI Operational Value Realization Engine (ROI Tracker)
+# AI ROI Calculator - Human vs AI + HITL
 
-Turn LLM telemetry into a **dynamic, risk-adjusted Profit & Loss statement** for AI operations.
+**Should you optimize the human process, or bring in AI with a human-in-the-loop?** This calculator answers that in money, after risk.
 
-Most AI dashboards show token counts. This one answers the only question a CFO asks: **is this making or losing money, after risk?** It prices every transaction all-in - API + retrieval + amortized build - deducts a *Hallucination Tax* for the cost of things going wrong, and compares the result to what humans cost today.
+It prices every transaction three ways - **Human (as-is)**, **Human (optimized)**, and **AI + HITL** - deducts a *Hallucination Tax* for the expected cost of AI getting things wrong, projects the **break-even** on the AI build, and recommends **where to draw the human/AI line** given how sensitive the process is. Cost is one axis; a qualitative panel scores the rest (speed, consistency, auditability, compliance, CX, adaptability).
 
 Two front ends over one shared model:
 
-- **`dashboard/index.html`** - a self-contained, no-build **calculator**. Every input is a slider. Move one, watch the risk-adjusted P&L and the executive report recompute live. Open the file in any browser.
-- **`roi_tracker`** - a zero-dependency Python engine for projections *and* real telemetry ingestion, with a one-page McKinsey-style executive report.
+- **`dashboard/index.html`** - a self-contained, no-build **calculator**. Every input is a slider. Move one and the risk-adjusted P&L, the three-way cost comparison, the break-even chart, the recommended split, the qualitative verdict, and the executive report all recompute live. Open the file in any browser.
+- **`roi_tracker`** - a zero-dependency Python engine for projections *and* real telemetry ingestion, with a one-page McKinsey-style executive report and the Human-vs-AI comparison.
+
+## What it answers
+
+1. **Human vs AI + HITL** - full cost per transaction and per month for all three operating models, cheapest flagged.
+2. **Break-even projection** - cumulative cash of going AI (pay CapEx, save per txn) vs just optimizing the humans, month by month, with the payback point marked.
+3. **Recommended approach** - "keep the most-sensitive X% human, move the remaining Y% to AI + HITL", driven by cost *and* process sensitivity.
+4. **Process sensitivity + qualitative measures** - a sensitivity lever that shifts the split, plus seven Human-vs-AI quality dimensions and a composite AI-favorability score with a plain-English verdict.
 
 ---
 

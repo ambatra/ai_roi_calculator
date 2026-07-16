@@ -6,7 +6,7 @@ report with the exact five-section structure the CFO asked for.
 
 from __future__ import annotations
 
-from .engine import ROIResult
+from .engine import ROIResult, ApproachComparison, HybridRecommendation
 
 
 def _money(x: float) -> str:
@@ -65,6 +65,33 @@ _One-page executive brief. Pricing source: **{r.price_source}**. Volume basis: {
 
 ## Strategic Recommendation
 {ExecutiveReport._recommend(r)}
+"""
+
+    @staticmethod
+    def comparison_block(
+        cmp: ApproachComparison,
+        rec: HybridRecommendation,
+        breakeven_month: float,
+    ) -> str:
+        """Human vs AI+HITL comparison + recommended hybrid, as Markdown."""
+        be = (
+            f"month {breakeven_month:.1f}"
+            if breakeven_month != float("inf")
+            else "never (AI not cheaper than humans here)"
+        )
+        return f"""## Human vs AI + HITL
+| Operating model | Cost / txn | Cost / month |
+|---|--:|--:|
+| Human (as-is) | {_cents(cmp.human_as_is_per_txn)} | {_money(cmp.human_as_is_monthly)} |
+| Human (optimized) | {_cents(cmp.human_optimized_per_txn)} | {_money(cmp.human_optimized_monthly)} |
+| AI + HITL | {_cents(cmp.ai_hitl_per_txn)} | {_money(cmp.ai_hitl_monthly)} |
+
+- **Cheapest model:** {cmp.cheapest()}.
+- **AI CapEx payback:** {be}.
+
+## Recommended Approach
+- {rec.headline}
+- **Saving vs staying all-human (as-is):** {_money(rec.monthly_saving_vs_as_is)}/month.
 """
 
     @staticmethod

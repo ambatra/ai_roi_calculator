@@ -120,6 +120,31 @@ class FinancialBaseline:
 
     maintenance_opex_monthly: float = 12_000.0
 
+    # -- current human process & its optimization alternative -----------------
+    # legacy_cost_per_txn above is the AS-IS human cost. These describe the
+    # "just make the humans better" alternative to buying AI:
+    #   human_optimization_reduction : fraction (0-1) cost cut from lean / tooling.
+    #   human_optimization_capex     : one-time spend to redesign the human process.
+    human_optimization_reduction: float = 0.20
+    human_optimization_capex: float = 40_000.0
+
+    # -- qualitative --------------------------------------------------------
+    # process_sensitivity (0-1): how error-costly / judgment-heavy the work is.
+    # High sensitivity inflates AI's effective risk and argues for keeping more
+    # of the work human. Drives the hybrid recommendation.
+    process_sensitivity: float = 0.35
+
+    @property
+    def optimized_human_cost_per_txn(self) -> float:
+        red = min(max(self.human_optimization_reduction, 0.0), 1.0)
+        return self.legacy_cost_per_txn * (1 - red) + self._opt_capex_per_txn
+
+    @property
+    def _opt_capex_per_txn(self) -> float:
+        if self.amortization_volume <= 0:
+            return 0.0
+        return self.human_optimization_capex / self.amortization_volume
+
     @property
     def amortized_capex_per_txn(self) -> float:
         if self.amortization_volume <= 0:

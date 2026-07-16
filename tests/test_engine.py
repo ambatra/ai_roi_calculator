@@ -89,6 +89,40 @@ def test_report_has_all_sections():
         assert section in md
 
 
+def test_compare_three_approaches():
+    engine = make_engine()
+    cmp = engine.compare_approaches()
+    # optimized human is cheaper than as-is human
+    assert cmp.human_optimized_per_txn < cmp.human_as_is_per_txn
+    # at baseline AI+HITL should be the cheapest of the three
+    assert cmp.cheapest() == "AI + HITL"
+
+
+def test_recommend_hybrid_keeps_sensitive_share_human():
+    engine = make_engine(process_sensitivity=0.4)
+    rec = engine.recommend_hybrid()
+    assert rec.human_retained_share == pytest.approx(0.4)
+    assert rec.ai_hitl_share == pytest.approx(0.6)
+    assert rec.monthly_saving_vs_as_is > 0
+
+
+def test_recommend_hybrid_all_human_when_ai_not_cheaper():
+    # crush AI's advantage: tiny human cost, huge risk tax
+    engine = make_engine(legacy_cost_per_txn=0.30, var_per_incident=500000, incident_rate=0.01)
+    rec = engine.recommend_hybrid()
+    assert rec.human_retained_share == 1.0
+    assert rec.ai_hitl_share == 0.0
+
+
+def test_breakeven_series_crosses_zero():
+    engine = make_engine()
+    pts = engine.breakeven_series(horizon_months=36)
+    assert pts[0].ai_cumulative_net < 0            # CapEx sunk at month 0
+    assert pts[-1].ai_cumulative_net > 0           # profitable by month 36
+    bm = engine.breakeven_month()
+    assert 0 < bm < 36
+
+
 def test_cost_fetcher_falls_back_gracefully():
     fetcher = CostFetcher()
     engine = make_engine()

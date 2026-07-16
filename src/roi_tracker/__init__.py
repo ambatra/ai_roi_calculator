@@ -20,7 +20,13 @@ from .router import TokenOptimizerRouter, TaskComplexity
 from .ledger import MicroPnLLedger, TransactionCost
 from .risk_pricer import RiskPricer, RiskLedger
 from .report import ExecutiveReport
-from .engine import ROIEngine, ROIResult
+from .engine import (
+    ROIEngine,
+    ROIResult,
+    ApproachComparison,
+    HybridRecommendation,
+    BreakevenPoint,
+)
 
 __all__ = [
     "FinancialBaseline",
@@ -36,6 +42,9 @@ __all__ = [
     "ExecutiveReport",
     "ROIEngine",
     "ROIResult",
+    "ApproachComparison",
+    "HybridRecommendation",
+    "BreakevenPoint",
 ]
 
 __version__ = "0.1.0"

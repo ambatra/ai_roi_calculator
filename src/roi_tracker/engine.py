@@ -52,6 +52,56 @@ class ROIResult:
     detail: dict = field(default_factory=dict)
 
 
+@dataclass
+class ApproachComparison:
+    """Cost of the three competing operating models, per txn and per month."""
+
+    human_as_is_per_txn: float
+    human_optimized_per_txn: float
+    ai_hitl_per_txn: float  # fully burdened CPO + hallucination tax
+
+    monthly_volume: int
+
+    @property
+    def human_as_is_monthly(self) -> float:
+        return self.human_as_is_per_txn * self.monthly_volume
+
+    @property
+    def human_optimized_monthly(self) -> float:
+        return self.human_optimized_per_txn * self.monthly_volume
+
+    @property
+    def ai_hitl_monthly(self) -> float:
+        return self.ai_hitl_per_txn * self.monthly_volume
+
+    def cheapest(self) -> str:
+        options = {
+            "Human (as-is)": self.human_as_is_per_txn,
+            "Human (optimized)": self.human_optimized_per_txn,
+            "AI + HITL": self.ai_hitl_per_txn,
+        }
+        return min(options, key=options.get)
+
+
+@dataclass
+class HybridRecommendation:
+    """The recommended human/AI split: keep the top slice human, automate the rest."""
+
+    human_retained_share: float  # fraction kept human (most-sensitive work)
+    ai_hitl_share: float         # fraction moved to AI + HITL
+    blended_cost_per_txn: float
+    monthly_saving_vs_as_is: float
+    monthly_saving_vs_all_ai: float
+    headline: str
+
+
+@dataclass
+class BreakevenPoint:
+    month: int
+    ai_cumulative_net: float        # cumulative cash vs staying as-is human, after CapEx
+    optimized_cumulative_net: float  # cumulative cash of optimizing humans instead
+
+
 class ROIEngine:
     def __init__(self, config: PipelineConfig, fetcher: CostFetcher | None = None) -> None:
         self.config = config
@@ -171,3 +221,89 @@ class ROIEngine:
                 "complex_task_share": b.complex_task_share,
             },
         )
+
+    # -- Human vs AI + HITL comparison ----------------------------------------
+
+    def ai_hitl_cost_per_txn(self) -> float:
+        """True per-txn cost of the AI+HITL model: fully burdened CPO + risk tax."""
+        r = self.project()
+        return r.fully_burdened_cpo + r.hallucination_tax_per_txn
+
+    def compare_approaches(self) -> ApproachComparison:
+        """Cost of Human-as-is vs Optimized-human vs AI+HITL."""
+        b = self.config.baseline
+        return ApproachComparison(
+            human_as_is_per_txn=b.legacy_cost_per_txn,
+            human_optimized_per_txn=b.optimized_human_cost_per_txn,
+            ai_hitl_per_txn=self.ai_hitl_cost_per_txn(),
+            monthly_volume=b.monthly_volume,
+        )
+
+    def recommend_hybrid(self) -> HybridRecommendation:
+        """Recommend how much of the work to keep human vs move to AI+HITL.
+
+        Logic (explainable, not a black box):
+          * If AI+HITL is not cheaper than humans, keep everything human.
+          * Otherwise adopt AI on the least-sensitive share of the work. The
+            share we KEEP human rises with ``process_sensitivity`` - high-judgment,
+            high-risk work stays with people, bulk work goes to AI+HITL.
+        """
+        b = self.config.baseline
+        cmp = self.compare_approaches()
+        human_cost = min(cmp.human_as_is_per_txn, cmp.human_optimized_per_txn)
+
+        if cmp.ai_hitl_per_txn >= human_cost:
+            headline = (
+                "Keep the process human for now (optionally optimize it). AI + HITL "
+                "is not yet cheaper than people at these unit economics and risk levels."
+            )
+            return HybridRecommendation(1.0, 0.0, human_cost, 0.0, 0.0, headline)
+
+        # AI is cheaper. Retain the most-sensitive slice for humans.
+        human_retained = min(max(b.process_sensitivity, 0.0), 1.0)
+        ai_share = 1.0 - human_retained
+        blended = human_retained * human_cost + ai_share * cmp.ai_hitl_per_txn
+
+        saving_vs_as_is = (cmp.human_as_is_per_txn - blended) * b.monthly_volume
+        saving_vs_all_ai = (cmp.ai_hitl_per_txn - blended) * b.monthly_volume  # >=0 only if hybrid beats all-AI
+        headline = (
+            f"Keep the most-sensitive {human_retained*100:.0f}% of work human; move the "
+            f"remaining {ai_share*100:.0f}% to AI + HITL. Blended cost "
+            f"${blended:,.4f}/txn."
+        )
+        return HybridRecommendation(
+            human_retained, ai_share, blended, saving_vs_as_is, saving_vs_all_ai, headline
+        )
+
+    def breakeven_series(self, horizon_months: int = 36) -> list[BreakevenPoint]:
+        """Cumulative cash of two investment paths, month by month.
+
+        ai_cumulative_net       : go AI+HITL. Save (human_as_is - ai_hitl) each txn,
+                                  pay CapEx upfront. Zero-crossing = payback month.
+        optimized_cumulative_net: instead just optimize the humans. Save
+                                  (as_is - optimized_operating) each txn, pay the
+                                  optimization CapEx upfront.
+        """
+        b = self.config.baseline
+        cmp = self.compare_approaches()
+
+        ai_monthly = (cmp.human_as_is_per_txn - cmp.ai_hitl_per_txn) * b.monthly_volume
+        opt_operating = b.optimized_human_cost_per_txn - b._opt_capex_per_txn
+        opt_monthly = (cmp.human_as_is_per_txn - opt_operating) * b.monthly_volume
+
+        pts: list[BreakevenPoint] = []
+        for m in range(0, horizon_months + 1):
+            pts.append(
+                BreakevenPoint(
+                    month=m,
+                    ai_cumulative_net=ai_monthly * m - b.capex_total,
+                    optimized_cumulative_net=opt_monthly * m - b.human_optimization_capex,
+                )
+            )
+        return pts
+
+    def breakeven_month(self) -> float:
+        b = self.config.baseline
+        cmp = self.compare_approaches()
+        ai_monthly = (cmp.human_as_is_per_txn - cmp.ai_hitl_per_txn) * b.monthly_volume
+        return (b.capex_total / ai_monthly) if ai_monthly > 0 else float("inf")

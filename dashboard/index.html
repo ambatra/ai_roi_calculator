@@ -3,44 +3,44 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AI ROI Tracker - Value Realization Engine</title>
+<title>AI ROI Calculator - Human vs AI + HITL</title>
 <style>
   :root{
     --bg:#faf9f6; --panel:#ffffff; --ink:#191817; --muted:#6b6864;
-    --line:#e7e3dc; --accent:#1a1a1a; --pos:#1f6f43; --neg:#a3341f;
-    --pos-bg:#eef5f0; --neg-bg:#f8ede9; --chip:#f2efe9;
+    --line:#e7e3dc; --accent:#1a1a1a; --pos:#1f6f43; --neg:#a3341f; --warn:#9a6b12;
+    --pos-bg:#eef5f0; --neg-bg:#f8ede9; --chip:#f2efe9; --human:#7a5cc4; --ai:#1f6f43;
     --radius:14px; --mono:"SF Mono",ui-monospace,"Roboto Mono",Menlo,monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
   }
   @media (prefers-color-scheme: dark){
     :root{--bg:#141311;--panel:#1d1b18;--ink:#f2efe9;--muted:#9d998f;
-      --line:#2c2926;--accent:#f2efe9;--pos:#5fbf89;--neg:#e08163;
-      --pos-bg:#18251d;--neg-bg:#2a1c17;--chip:#26231f;}
+      --line:#2c2926;--accent:#f2efe9;--pos:#5fbf89;--neg:#e08163;--warn:#d6a24e;
+      --pos-bg:#18251d;--neg-bg:#2a1c17;--chip:#26231f;--human:#a68be6;--ai:#5fbf89;}
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
     font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+  .wrap{max-width:1320px;margin:0 auto;padding:32px 24px 80px}
   header.top{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:28px}
   header.top h1{font-size:26px;margin:0 0 4px;letter-spacing:-.02em;font-weight:650}
-  header.top p{margin:0;color:var(--muted);font-size:14px}
+  header.top p{margin:0;color:var(--muted);font-size:14px;max-width:80ch}
   .src{display:inline-block;margin-top:10px;font-family:var(--mono);font-size:12px;
     background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:3px 11px;color:var(--muted)}
-  .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px}
-  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:28px;align-items:start}
+  @media(max-width:940px){.grid{grid-template-columns:1fr}}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+  .panel+.panel{margin-top:24px}
   .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
     margin:0 0 4px;font-weight:600}
   .panel .sub{font-size:12.5px;color:var(--muted);margin:0 0 16px}
   section.group{margin-bottom:26px}
   section.group:last-child{margin-bottom:0}
-  .glabel{font-size:13px;font-weight:650;letter-spacing:.01em;margin:0 0 2px;
-    display:flex;align-items:center;gap:7px}
-  .gdesc{font-size:12px;color:var(--muted);margin:0 0 14px;max-width:52ch}
+  .glabel{font-size:13px;font-weight:650;letter-spacing:.01em;margin:0 0 2px}
+  .gdesc{font-size:12px;color:var(--muted);margin:0 0 14px;max-width:54ch}
   .ctrl{margin-bottom:15px}
   .ctrl .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
   .ctrl label{font-size:13px}
-  .ctrl .hint{font-size:11.5px;color:var(--muted);display:block;margin-top:1px;max-width:46ch}
+  .ctrl .hint{font-size:11.5px;color:var(--muted);display:block;margin-top:1px;max-width:48ch}
   .valbox{font-family:var(--mono);font-size:13px;border:1px solid var(--line);background:var(--bg);
     color:var(--ink);border-radius:8px;padding:3px 7px;width:104px;text-align:right}
   input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;margin:9px 0 2px;
@@ -60,20 +60,40 @@
     border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:2px 5px}
   table.models td.num{text-align:right}
   .pick{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:10px;color:var(--pos)}
-  /* results */
-  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .kpi{border:1px solid var(--line);border-radius:12px;padding:14px 15px;background:var(--bg)}
   .kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
-  .kpi .v{font-size:23px;font-weight:660;letter-spacing:-.02em;font-family:var(--mono)}
+  .kpi .v{font-size:22px;font-weight:660;letter-spacing:-.02em;font-family:var(--mono)}
   .kpi .u{font-size:11.5px;color:var(--muted);margin-top:3px}
   .kpi.pos .v{color:var(--pos)} .kpi.neg .v{color:var(--neg)}
   .kpi.big{grid-column:span 2}
-  .wf{margin:18px 0 6px}
-  .wf .bar{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12.5px}
-  .wf .bar .nm{width:130px;color:var(--muted);flex:none}
-  .wf .bar .track{flex:1;height:16px;background:var(--chip);border-radius:5px;position:relative;overflow:hidden}
-  .wf .bar .fill{height:100%;border-radius:5px}
-  .wf .bar .amt{width:78px;text-align:right;font-family:var(--mono);flex:none}
+  .cmp .cbar{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px}
+  .cmp .cbar .nm{width:132px;flex:none;font-weight:600}
+  .cmp .cbar .nm small{display:block;font-weight:400;color:var(--muted);font-size:10.5px}
+  .cmp .cbar .track{flex:1;height:22px;background:var(--chip);border-radius:6px;position:relative;overflow:hidden}
+  .cmp .cbar .fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;
+    padding-right:7px;color:#fff;font-family:var(--mono);font-size:11px;min-width:34px}
+  .tag{display:inline-block;font-size:10.5px;font-family:var(--mono);padding:1px 7px;border-radius:20px;
+    border:1px solid var(--line);color:var(--muted);margin-left:6px}
+  .tag.win{color:var(--pos);border-color:var(--pos)}
+  .chartbox{margin-top:6px}
+  .chartbox svg{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:18px;font-size:11.5px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:20px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+  .rec{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--bg)}
+  .rec .split{display:flex;height:30px;border-radius:8px;overflow:hidden;margin:12px 0 8px;font-size:11.5px;font-weight:600}
+  .rec .split .h{background:var(--human);color:#fff;display:flex;align-items:center;justify-content:center}
+  .rec .split .a{background:var(--ai);color:#fff;display:flex;align-items:center;justify-content:center}
+  .rec p{margin:6px 0 0;font-size:13px}
+  .qrow{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:12.5px}
+  .qrow .qn{width:150px;flex:none}
+  .qrow .qn small{display:block;color:var(--muted);font-size:10.5px}
+  .qrow .qtrack{flex:1;height:8px;border-radius:5px;position:relative;
+    background:linear-gradient(90deg,var(--human),var(--chip),var(--ai))}
+  .qrow .qdot{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;
+    background:var(--panel);border:2px solid var(--accent);transform:translateX(-50%)}
+  .qends{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin:-2px 0 14px}
+  .qverdict{border-top:1px solid var(--line);padding-top:12px;font-size:12.5px}
   .report{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:6px}
   .report h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 6px}
   .report h3:first-child{margin-top:0}
@@ -92,39 +112,55 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>AI Operational Value Realization Engine</h1>
-    <p>Every input is a lever. Move a slider, watch the risk-adjusted P&amp;L recompute. This is the same math as the Python engine (<code>roi_tracker</code>), in the browser.</p>
+    <h1>AI ROI Calculator &mdash; Human vs AI + HITL</h1>
+    <p>Should you optimize the human process, or bring in AI with a human-in-the-loop? Every input is a lever. Move a slider and the risk-adjusted P&amp;L, the break-even projection, and the recommended human/AI split all recompute live. Same math as the Python engine (<code>roi_tracker</code>).</p>
     <span class="src">pricing: editable &middot; auto-filled from litellm when the engine runs</span>
   </header>
 
   <div class="grid">
     <!-- ================= INPUTS ================= -->
+    <div>
     <div class="panel">
       <h2>Inputs</h2>
-      <p class="sub">The CFO interview, as sliders. Hover any value box to type an exact number.</p>
+      <p class="sub">The CFO interview, as sliders. Type an exact number in any value box.</p>
 
       <section class="group">
-        <p class="glabel">1 &middot; Legacy baseline</p>
-        <p class="gdesc">What the work costs <em>today</em>, before AI - and how much of it there is.</p>
-
-        <div class="ctrl" data-c>
-          <div class="row"><label>Legacy manual cost / transaction</label>
+        <p class="glabel">1 &middot; Current human process (baseline)</p>
+        <p class="gdesc">What the work costs <em>today</em>, with people - and how much of it there is.</p>
+        <div class="ctrl">
+          <div class="row"><label>Human cost / transaction (as-is)</label>
             <input class="valbox" data-num="legacy" type="number" step="0.01"></div>
           <input type="range" data-range="legacy" min="0.2" max="50" step="0.1">
-          <span class="hint">Fully-burdened human rate x minutes per task. The cost AI has to beat.</span>
+          <span class="hint">Fully-burdened operator rate x minutes per task. The number every alternative must beat.</span>
         </div>
-
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>Monthly transaction volume</label>
             <input class="valbox" data-num="volume" type="number" step="1000"></div>
           <input type="range" data-range="volume" min="1000" max="2000000" step="1000">
-          <span class="hint">How many transactions per month. Scales every per-unit saving.</span>
+          <span class="hint">How many transactions per month. Scales every per-unit number.</span>
         </div>
       </section>
 
       <section class="group">
-        <p class="glabel">2 &middot; Model pricing &amp; routing</p>
-        <p class="gdesc">Live token prices per 1M tokens. The router sends simple work to the cheapest fallback and complex work to the cheapest flagship. <span class="pick">&#9679; = auto-selected</span></p>
+        <p class="glabel">2 &middot; Optimize-the-humans alternative</p>
+        <p class="gdesc">Before buying AI: how much cheaper could the <em>human</em> process get with lean / tooling, and what would that cost to do?</p>
+        <div class="ctrl">
+          <div class="row"><label>Human cost reduction from optimization (%)</label>
+            <input class="valbox" data-num="optred" type="number" step="1"></div>
+          <input type="range" data-range="optred" min="0" max="60" step="1">
+          <span class="hint">Realistic efficiency gain from redesigning the manual process.</span>
+        </div>
+        <div class="ctrl">
+          <div class="row"><label>One-time optimization CapEx</label>
+            <input class="valbox" data-num="optcapex" type="number" step="1000"></div>
+          <input type="range" data-range="optcapex" min="0" max="300000" step="1000">
+          <span class="hint">Cost to redesign / retrain / re-tool the human process.</span>
+        </div>
+      </section>
+
+      <section class="group">
+        <p class="glabel">3 &middot; Model pricing &amp; routing (AI path)</p>
+        <p class="gdesc">Live token prices per 1M tokens. Router sends simple work to the cheapest fallback, complex work to the cheapest flagship. <span class="pick">&#9679; = auto-selected</span></p>
         <table class="models">
           <thead><tr><th>Model</th><th>Input $/1M</th><th>Output $/1M</th></tr></thead>
           <tbody id="modelRows"></tbody>
@@ -132,120 +168,154 @@
       </section>
 
       <section class="group">
-        <p class="glabel">3 &middot; Task mix &amp; token size</p>
-        <p class="gdesc">How hard the average task is, and how many tokens it burns.</p>
-
-        <div class="ctrl" data-c>
+        <p class="glabel">4 &middot; Task mix &amp; token size</p>
+        <div class="ctrl">
           <div class="row"><label>Complex-task share (routed to flagship)</label>
             <input class="valbox" data-num="share" type="number" step="1"></div>
           <input type="range" data-range="share" min="0" max="100" step="1">
-          <span class="hint">Share of traffic hard enough to need a frontier model. The rest goes cheap.</span>
+          <span class="hint">Share of traffic hard enough to need a frontier model.</span>
         </div>
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>Avg input tokens / txn</label>
             <input class="valbox" data-num="intok" type="number" step="50"></div>
           <input type="range" data-range="intok" min="100" max="8000" step="50">
-          <span class="hint">Prompt size. Bigger prompts cost more per call.</span>
         </div>
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>Avg output tokens / txn</label>
             <input class="valbox" data-num="outtok" type="number" step="25"></div>
           <input type="range" data-range="outtok" min="50" max="4000" step="25">
-          <span class="hint">Answer size. Output tokens usually cost more than input.</span>
         </div>
       </section>
 
       <section class="group">
-        <p class="glabel">4 &middot; Infrastructure &amp; build cost</p>
-        <p class="gdesc">The overhead beyond the API bill - retrieval, and paying back the one-time build.</p>
-
-        <div class="ctrl" data-c>
+        <p class="glabel">5 &middot; Infrastructure &amp; build cost (AI path)</p>
+        <div class="ctrl">
           <div class="row"><label>Vector DB retrieval / txn</label>
             <input class="valbox" data-num="vdb" type="number" step="0.0001"></div>
           <input type="range" data-range="vdb" min="0" max="0.02" step="0.0001">
-          <span class="hint">Cost each time the system looks something up in its knowledge store.</span>
         </div>
-        <div class="ctrl" data-c>
-          <div class="row"><label>Total CapEx (build + fine-tuning)</label>
+        <div class="ctrl">
+          <div class="row"><label>Total AI CapEx (build + fine-tuning)</label>
             <input class="valbox" data-num="capex" type="number" step="1000"></div>
           <input type="range" data-range="capex" min="0" max="1000000" step="1000">
-          <span class="hint">One-time money already spent building the system. Sunk cost to earn back.</span>
+          <span class="hint">One-time build spend. Drives the break-even projection.</span>
         </div>
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>Amortize CapEx over (transactions)</label>
             <input class="valbox" data-num="amort" type="number" step="100000"></div>
           <input type="range" data-range="amort" min="100000" max="20000000" step="100000">
-          <span class="hint">Spread the build cost across this many txns. CapEx / this = build cost per txn.</span>
         </div>
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>Maintenance OpEx / month</label>
             <input class="valbox" data-num="opex" type="number" step="500"></div>
           <input type="range" data-range="opex" min="0" max="200000" step="500">
-          <span class="hint">Ongoing run cost: monitoring, retraining, on-call, licences.</span>
         </div>
       </section>
 
       <section class="group">
-        <p class="glabel">5 &middot; Risk (the Hallucination Tax)</p>
-        <p class="gdesc">AI is not free of consequence. Two risks eat into savings and get deducted here.</p>
-
-        <div class="ctrl" data-c>
+        <p class="glabel">6 &middot; Risk (the Hallucination Tax)</p>
+        <p class="gdesc">AI is not free of consequence. These deduct from AI savings.</p>
+        <div class="ctrl">
           <div class="row"><label>Value at Risk / catastrophic incident</label>
             <input class="valbox" data-num="var" type="number" step="1000"></div>
           <input type="range" data-range="var" min="0" max="500000" step="1000">
-          <span class="hint">Financial damage of one bad hallucination or compliance failure reaching production.</span>
+          <span class="hint">Damage of one bad hallucination or compliance failure in production.</span>
         </div>
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>Incident rate (per 100,000 outputs)</label>
             <input class="valbox" data-num="incid" type="number" step="0.1"></div>
           <input type="range" data-range="incid" min="0" max="200" step="0.1">
-          <span class="hint">How often such a catastrophic failure slips through. Rare but expensive.</span>
         </div>
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>HITL review cost / flagged output</label>
             <input class="valbox" data-num="hitlc" type="number" step="0.5"></div>
           <input type="range" data-range="hitlc" min="0" max="60" step="0.5">
-          <span class="hint">Cost of a human reviewing an output a guardrail flagged.</span>
         </div>
-        <div class="ctrl" data-c>
+        <div class="ctrl">
           <div class="row"><label>HITL rate (% of outputs reviewed)</label>
             <input class="valbox" data-num="hitlr" type="number" step="0.5"></div>
           <input type="range" data-range="hitlr" min="0" max="100" step="0.5">
-          <span class="hint">Share of outputs sent to a human queue instead of auto-shipped.</span>
         </div>
       </section>
+
+      <section class="group">
+        <p class="glabel">7 &middot; Process sensitivity (drives the split)</p>
+        <p class="gdesc">How error-costly and judgment-heavy is this work? High sensitivity keeps more of it human, even when AI is cheaper.</p>
+        <div class="ctrl">
+          <div class="row"><label>Process sensitivity</label>
+            <input class="valbox" data-num="sens" type="number" step="1"></div>
+          <input type="range" data-range="sens" min="0" max="100" step="1">
+          <span class="hint" id="sensHint">Share of work to keep human when AI is cost-favorable.</span>
+        </div>
+      </section>
+
+      <section class="group">
+        <p class="glabel">8 &middot; Qualitative measures (Human &harr; AI)</p>
+        <p class="gdesc">Beyond cost. Slide toward whoever is stronger on each dimension: left = Human wins, right = AI wins.</p>
+        <div id="qualControls"></div>
+      </section>
+    </div>
     </div>
 
     <!-- ================= RESULTS ================= -->
+    <div>
     <div class="panel">
       <h2>Risk-adjusted P&amp;L</h2>
       <p class="sub">Live. Recomputes on every change.</p>
-
       <div class="kpis" id="kpis"></div>
+    </div>
 
-      <div class="wf" id="waterfall"></div>
+    <div class="panel cmp">
+      <h2>Human vs AI + HITL &mdash; cost per transaction</h2>
+      <p class="sub">Three ways to run the same process. Lowest bar wins.</p>
+      <div id="cmpBars"></div>
+    </div>
 
+    <div class="panel">
+      <h2>Break-even projection</h2>
+      <p class="sub">Cumulative cash vs staying all-human. Where a line crosses $0, that investment has paid back.</p>
+      <div class="chartbox" id="chart"></div>
+      <div class="legend">
+        <span><i style="border-color:var(--ai)"></i>Go AI + HITL (pays back CapEx)</span>
+        <span><i style="border-color:var(--human)"></i>Optimize humans instead</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Recommended approach</h2>
+      <p class="sub">Where to draw the human / AI line, given cost and sensitivity.</p>
+      <div class="rec" id="rec"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Qualitative verdict</h2>
+      <p class="sub">Cost is one axis. These are the rest.</p>
+      <div id="qual"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Executive report</h2>
       <div class="report" id="report"></div>
-
       <div class="actions">
         <button class="btn" id="copyReport">Copy executive report (Markdown)</button>
         <button class="btn" id="reset">Reset to baseline</button>
       </div>
     </div>
+    </div>
   </div>
 
-  <p class="foot">AI Operational Value Realization Engine &middot; browser calculator mirrors <code>python -m roi_tracker</code> &middot; MIT</p>
+  <p class="foot">AI ROI Calculator &middot; browser mirrors <code>python -m roi_tracker</code> &middot; MIT</p>
 </div>
 
 <script>
-// ---- baseline (mirrors config.FinancialBaseline defaults) -----------------
+// ---- baseline (mirrors config.FinancialBaseline) --------------------------
 const BASE = {
-  legacy:4.20, volume:100000, share:30, intok:1200, outtok:400,
+  legacy:4.20, volume:100000, optred:20, optcapex:40000,
+  share:30, intok:1200, outtok:400,
   vdb:0.0004, capex:180000, amort:5000000, opex:12000,
-  var:25000, incid:5, /* per 100k => 0.00005 */ hitlc:8, hitlr:5
+  var:25000, incid:5, hitlc:8, hitlr:5, sens:35
 };
-// ---- models (mirrors config.DEFAULT_MODELS; prices editable) --------------
-const MODELS = [
+const MODELS_DEFAULT = [
   {name:"claude-opus-4-8", tier:"flagship", in:15.0, out:75.0},
   {name:"gpt-5",           tier:"flagship", in:10.0, out:30.0},
   {name:"gemini-2.5-pro",  tier:"flagship", in:1.25, out:10.0},
@@ -253,9 +323,20 @@ const MODELS = [
   {name:"gpt-5-mini",      tier:"fallback", in:0.25, out:2.0},
   {name:"gemini-2.5-flash",tier:"fallback", in:0.30, out:2.50},
 ];
+const QUAL_DEFAULT = [
+  {key:"speed",   name:"Speed & throughput",        sub:"latency, jobs/hour",       v:5},
+  {key:"consist", name:"Consistency",               sub:"low output variance",      v:4},
+  {key:"scale",   name:"Scalability / surge",       sub:"handle 10x overnight",     v:5},
+  {key:"audit",   name:"Auditability",              sub:"explain every decision",   v:2},
+  {key:"comply",  name:"Compliance control",        sub:"regulatory defensibility", v:2},
+  {key:"cx",      name:"Customer experience",       sub:"empathy, nuance",          v:3},
+  {key:"adapt",   name:"Adaptability to edge cases",sub:"novel, ambiguous inputs",  v:2},
+];
 let S = {...BASE};
+let MODELS = MODELS_DEFAULT.map(m=>({...m}));
+let QUAL = QUAL_DEFAULT.map(q=>({...q}));
 
-// ---- build model pricing table -------------------------------------------
+// ---- model pricing table --------------------------------------------------
 const modelRows = document.getElementById('modelRows');
 function buildModelRows(){
   modelRows.innerHTML='';
@@ -267,18 +348,30 @@ function buildModelRows(){
     modelRows.appendChild(tr);
   });
   modelRows.querySelectorAll('input').forEach(inp=>{
-    inp.addEventListener('input',()=>{
-      const i=+inp.dataset.mi, k=inp.dataset.mk;
-      MODELS[i][k]=parseFloat(inp.value)||0; recompute();
-    });
+    inp.addEventListener('input',()=>{MODELS[+inp.dataset.mi][inp.dataset.mk]=parseFloat(inp.value)||0; recompute();});
   });
 }
 
-// ---- wire sliders <-> number boxes ---------------------------------------
+// ---- qualitative sliders --------------------------------------------------
+const qualControls=document.getElementById('qualControls');
+function buildQual(){
+  qualControls.innerHTML='';
+  QUAL.forEach((q,i)=>{
+    const d=document.createElement('div'); d.className='ctrl';
+    d.innerHTML=`<div class="row"><label>${q.name} <small style="color:var(--muted)">${q.sub}</small></label></div>
+      <input type="range" data-qi="${i}" min="1" max="5" step="1" value="${q.v}">
+      <div class="qends"><span>Human</span><span>Neutral</span><span>AI</span></div>`;
+    qualControls.appendChild(d);
+  });
+  qualControls.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',()=>{QUAL[+inp.dataset.qi].v=parseFloat(inp.value); recompute();});
+  });
+}
+
+// ---- wire sliders <-> boxes ----------------------------------------------
 function wire(){
   document.querySelectorAll('[data-range]').forEach(r=>{
-    const key=r.dataset.range;
-    const num=document.querySelector(`[data-num="${key}"]`);
+    const key=r.dataset.range, num=document.querySelector(`[data-num="${key}"]`);
     r.value=S[key]; num.value=S[key];
     r.addEventListener('input',()=>{S[key]=parseFloat(r.value); num.value=r.value; recompute();});
     num.addEventListener('input',()=>{S[key]=parseFloat(num.value)||0; r.value=S[key]; recompute();});
@@ -291,156 +384,199 @@ const money=x=>{ if(!isFinite(x))return'n/a'; const s=x<0?'-':''; x=Math.abs(x);
   if(x>=1e3)return s+'$'+(x/1e3).toFixed(1)+'K';
   return s+'$'+x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});};
 const cents=x=>'$'+x.toLocaleString(undefined,{minimumFractionDigits:4,maximumFractionDigits:4});
-
-function blended(m){return 0.5*m.in + 0.5*m.out;} // per-1M blended, for picking cheapest
-function cheapest(tier){return MODELS.filter(m=>m.tier===tier).reduce((a,b)=>blended(b)<blended(a)?b:a);}
-function apiCost(m){return (S.intok*m.in + S.outtok*m.out)/1e6;}
+const blended=m=>0.5*m.in+0.5*m.out;
+const cheapestModel=t=>MODELS.filter(m=>m.tier===t).reduce((a,b)=>blended(b)<blended(a)?b:a);
+const apiCost=m=>(S.intok*m.in+S.outtok*m.out)/1e6;
 
 function compute(){
-  const flag=cheapest('flagship'), fall=cheapest('fallback');
-  const amortPerTxn = S.amort>0 ? S.capex/S.amort : 0;
-  const opexPerTxn  = S.volume>0 ? S.opex/S.volume : 0;
-  const infra = S.vdb + amortPerTxn + opexPerTxn;
-  const cpoFlag = apiCost(flag)+infra;
-  const cpoFall = apiCost(fall)+infra;
-  const share = Math.min(Math.max(S.share/100,0),1);
-  const cpo = share*cpoFlag + (1-share)*cpoFall;
+  const flag=cheapestModel('flagship'), fall=cheapestModel('fallback');
+  const amortPerTxn=S.amort>0?S.capex/S.amort:0;
+  const opexPerTxn=S.volume>0?S.opex/S.volume:0;
+  const infra=S.vdb+amortPerTxn+opexPerTxn;
+  const cpo=(S.share/100)*(apiCost(flag)+infra)+(1-S.share/100)*(apiCost(fall)+infra);
+  const tax=(S.incid/1e5)*S.var + (S.hitlr/100)*S.hitlc;
 
-  const incidRate = S.incid/1e5;                 // per-100k -> fraction
-  const hitlRate  = S.hitlr/100;
-  const incidentTax = incidRate*S.var;
-  const hitlTax     = hitlRate*S.hitlc;
-  const tax = incidentTax+hitlTax;
+  const humanAsIs=S.legacy;
+  const optCapexPerTxn=S.amort>0?S.optcapex/S.amort:0;
+  const humanOpt=S.legacy*(1-S.optred/100)+optCapexPerTxn;
+  const aiHitl=cpo+tax;
+  const bestHuman=Math.min(humanAsIs,humanOpt);
 
-  const gross = S.legacy - cpo;
-  const net   = gross - tax;
-  const monthlyNet = net*S.volume;
-  const monthlyGross = gross*S.volume;
-  const monthlyRun = cpo*S.volume;
-  const roi = cpo>0 ? net/cpo*100 : Infinity;
+  const sens=Math.min(Math.max(S.sens/100,0),1);
+  let humanRetained, aiShare, blendedCost, recAllHuman=false;
+  if(aiHitl>=bestHuman){ humanRetained=1; aiShare=0; blendedCost=bestHuman; recAllHuman=true; }
+  else { humanRetained=sens; aiShare=1-sens; blendedCost=humanRetained*bestHuman+aiShare*aiHitl; }
+  const recSavingVsAsIs=(humanAsIs-blendedCost)*S.volume;
 
-  const varNet = S.legacy - (cpo-opexPerTxn) - tax;
-  const breakeven = varNet>0 ? S.opex/varNet : Infinity;
-  const hitlReclaimed = (1-hitlRate)*S.legacy*S.volume;
+  const aiMonthly=(humanAsIs-aiHitl)*S.volume;
+  const optOperating=humanOpt-optCapexPerTxn;
+  const optMonthly=(humanAsIs-optOperating)*S.volume;
+  const breakevenMonth=aiMonthly>0?S.capex/aiMonthly:Infinity;
 
-  return {flag,fall,cpo,cpoFlag,cpoFall,share,infra,amortPerTxn,opexPerTxn,
-    incidentTax,hitlTax,tax,gross,net,monthlyNet,monthlyGross,monthlyRun,roi,
-    breakeven,hitlReclaimed, apiFlag:apiCost(flag), apiFall:apiCost(fall)};
+  const net=humanAsIs-aiHitl;
+  const roi=cpo>0?net/cpo*100:Infinity;
+
+  return {flag,fall,cpo,tax,infra,amortPerTxn,opexPerTxn,humanAsIs,humanOpt,aiHitl,bestHuman,
+    humanRetained,aiShare,blendedCost,recAllHuman,recSavingVsAsIs,
+    aiMonthly,optMonthly,breakevenMonth,net,roi};
 }
 
 // ---- render ---------------------------------------------------------------
 function recompute(){
   const r=compute();
-  // auto-selected model markers
-  MODELS.forEach((m,i)=>{document.getElementById('pick'+i).textContent =
-    (m===r.flag||m===r.fall)?'●':'';});
+  MODELS.forEach((m,i)=>{document.getElementById('pick'+i).textContent=(m===r.flag||m===r.fall)?'●':'';});
+  document.getElementById('sensHint').textContent=
+    `At current cost, keep ~${S.sens}% most-sensitive work human; automate the rest.`;
 
-  const roiTxt = isFinite(r.roi)? (r.roi).toLocaleString(undefined,{maximumFractionDigits:0})+'%' : '∞';
-  const beTxt  = isFinite(r.breakeven)? Math.round(r.breakeven).toLocaleString()+' /mo' : 'not reachable';
-  const good = r.net>0;
-  document.getElementById('kpis').innerHTML = `
-    <div class="kpi big ${good?'pos':'neg'}"><div class="k">Net saving / month (risk-adjusted)</div>
-      <div class="v">${money(r.monthlyNet)}</div><div class="u">${money(r.monthlyNet*12)} / year after tax &amp; OpEx</div></div>
-    <div class="kpi ${good?'pos':'neg'}"><div class="k">Net ROI</div><div class="v">${roiTxt}</div>
-      <div class="u">net benefit per $ of run cost</div></div>
-    <div class="kpi"><div class="k">Break-even volume</div><div class="v" style="font-size:17px">${beTxt}</div>
-      <div class="u">covers monthly OpEx</div></div>
-    <div class="kpi"><div class="k">Fully burdened CPO</div><div class="v" style="font-size:18px">${cents(r.cpo)}</div>
-      <div class="u">vs ${cents(S.legacy)} human</div></div>
-    <div class="kpi ${good?'pos':'neg'}"><div class="k">Net saving / txn</div><div class="v" style="font-size:18px">${cents(r.net)}</div>
-      <div class="u">gross ${cents(r.gross)} - tax ${cents(r.tax)}</div></div>`;
+  const good=r.net>0;
+  const roiTxt=isFinite(r.roi)?r.roi.toLocaleString(undefined,{maximumFractionDigits:0})+'%':'∞';
+  const beTxt=isFinite(r.breakevenMonth)?(r.breakevenMonth<1?'< 1 mo':r.breakevenMonth.toFixed(1)+' mo'):'never';
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi big ${good?'pos':'neg'}"><div class="k">Net saving / month &mdash; AI+HITL vs as-is human</div>
+      <div class="v">${money(r.net*S.volume)}</div><div class="u">${money(r.net*S.volume*12)}/yr after risk tax</div></div>
+    <div class="kpi ${good?'pos':'neg'}"><div class="k">Net ROI</div><div class="v">${roiTxt}</div><div class="u">per $ of AI run cost</div></div>
+    <div class="kpi"><div class="k">CapEx payback</div><div class="v" style="font-size:18px">${beTxt}</div><div class="u">go-AI break-even</div></div>
+    <div class="kpi"><div class="k">AI + HITL cost</div><div class="v" style="font-size:18px">${cents(r.aiHitl)}</div><div class="u">vs ${cents(r.humanAsIs)} human</div></div>
+    <div class="kpi ${r.recSavingVsAsIs>0?'pos':''}"><div class="k">Recommended blended</div><div class="v" style="font-size:18px">${cents(r.blendedCost)}</div><div class="u">${money(r.recSavingVsAsIs)}/mo saved</div></div>`;
 
-  // waterfall: legacy -> CPO -> tax -> net
-  const max=Math.max(S.legacy,0.0001);
-  const bar=(nm,amt,cls,frac)=>`<div class="bar"><span class="nm">${nm}</span>
-    <span class="track"><span class="fill" style="width:${Math.min(Math.abs(frac)*100,100)}%;background:${cls}"></span></span>
-    <span class="amt">${cents(amt)}</span></div>`;
-  document.getElementById('waterfall').innerHTML =
-    bar('Legacy cost', S.legacy, 'var(--muted)', S.legacy/max)+
-    bar('- AI CPO', -r.cpo, 'var(--neg)', r.cpo/max)+
-    bar('- Hallucination tax', -r.tax, 'var(--neg)', r.tax/max)+
-    bar('= Net / txn', r.net, good?'var(--pos)':'var(--neg)', r.net/max);
-
-  renderReport(r,roiTxt,beTxt,good);
+  renderCmp(r); renderChart(r); renderRec(r,good,beTxt); renderQual(r); renderReport(r,good,roiTxt,beTxt);
 }
 
-function renderReport(r,roiTxt,beTxt,good){
-  const sharePct=(r.share*100).toFixed(0);
-  const rec = r.net<=0
-    ? `<b class="neg">Do not scale yet.</b> Net saving per transaction is non-positive. Route more simple tasks to the fallback tier and cut the Hallucination Tax with tighter guardrails before adding volume.`
-    : `<b class="pos">Scale.</b> Unit economics are positive at ${cents(r.net)}/txn. Primary lever: ${r.cpo>r.tax?'shift more traffic to the fallback tier':'invest in guardrails to shrink the Hallucination Tax'}. Grow past break-even to amortize CapEx faster, and wire real telemetry (litellm callbacks + guardrail flags) to replace assumed rates with measured ones.`;
+function renderCmp(r){
+  const max=Math.max(r.humanAsIs,r.humanOpt,r.aiHitl,0.0001);
+  const win=Math.min(r.humanAsIs,r.humanOpt,r.aiHitl);
+  const bar=(nm,sub,amt,col)=>`<div class="cbar"><span class="nm">${nm}<small>${sub}</small></span>
+    <span class="track"><span class="fill" style="width:${Math.max(amt/max*100,6)}%;background:${col}">${cents(amt)}</span></span>
+    ${amt===win?'<span class="tag win">cheapest</span>':'<span class="tag">'+(amt/win).toFixed(2)+'x</span>'}</div>`;
+  document.getElementById('cmpBars').innerHTML=
+    bar('Human (as-is)','do nothing',r.humanAsIs,'var(--human)')+
+    bar('Human (optimized)','lean + tooling',r.humanOpt,'#b08fe0')+
+    bar('AI + HITL','automate + review',r.aiHitl,'var(--ai)');
+}
+
+function renderChart(r){
+  const W=560,H=230,pad={l:52,r:14,t:14,b:26},MO=36,BM=r.breakevenMonth;
+  const xs=m=>pad.l+(m/MO)*(W-pad.l-pad.r);
+  const aiPts=[],optPts=[];
+  for(let m=0;m<=MO;m++){aiPts.push([m,r.aiMonthly*m-S.capex]); optPts.push([m,r.optMonthly*m-S.optcapex]);}
+  const allY=aiPts.concat(optPts).map(p=>p[1]).concat([0]);
+  let ymin=Math.min(...allY),ymax=Math.max(...allY); if(ymin===ymax){ymax=ymin+1;}
+  const ys=v=>pad.t+(1-(v-ymin)/(ymax-ymin))*(H-pad.t-pad.b);
+  const path=pts=>pts.map((p,i)=>(i?'L':'M')+xs(p[0]).toFixed(1)+' '+ys(p[1]).toFixed(1)).join(' ');
+  const zeroY=ys(0);
+  const gridY=[ymin,(ymin+ymax)/2,ymax].map(v=>`<line x1="${pad.l}" y1="${ys(v).toFixed(1)}" x2="${W-pad.r}" y2="${ys(v).toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="${pad.l-6}" y="${(ys(v)+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--muted)" font-family="var(--mono)">${money(v)}</text>`).join('');
+  const xticks=[0,12,24,36].map(m=>`<text x="${xs(m)}" y="${H-8}" text-anchor="middle" font-size="9" fill="var(--muted)">${m}mo</text>`).join('');
+  const marker=isFinite(BM)&&BM<=MO?`<circle cx="${xs(BM).toFixed(1)}" cy="${zeroY.toFixed(1)}" r="4" fill="var(--ai)"/><text x="${xs(BM).toFixed(1)}" y="${(zeroY-9).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="var(--ai)" font-weight="600">payback ${BM<1?'<1':BM.toFixed(1)}mo</text>`:'';
+  document.getElementById('chart').innerHTML=
+    `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" font-family="var(--sans)">
+      ${gridY}
+      <line x1="${pad.l}" y1="${zeroY.toFixed(1)}" x2="${W-pad.r}" y2="${zeroY.toFixed(1)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+      <path d="${path(optPts)}" fill="none" stroke="var(--human)" stroke-width="2"/>
+      <path d="${path(aiPts)}" fill="none" stroke="var(--ai)" stroke-width="2.4"/>
+      ${xticks}${marker}
+    </svg>`;
+}
+
+function renderRec(r,good,beTxt){
+  const hp=(r.humanRetained*100).toFixed(0), ap=(r.aiShare*100).toFixed(0);
+  const cheaperHuman=r.humanOpt<r.humanAsIs?'optimized-human':'as-is human';
+  let body;
+  if(r.recAllHuman){
+    body=`<p><b>Keep the process human for now.</b> AI + HITL (${cents(r.aiHitl)}/txn) is not cheaper than ${cheaperHuman} (${cents(r.bestHuman)}/txn) at this risk and volume. Best move: optimize the humans (${money((r.humanAsIs-r.humanOpt)*S.volume)}/mo saving) and re-test AI as token prices fall or volume grows.</p>`;
+  } else {
+    body=`<div class="split"><div class="h" style="width:${hp}%">Human ${hp}%</div><div class="a" style="width:${ap}%">AI + HITL ${ap}%</div></div>
+      <p><b>Human up to the most-sensitive ${hp}% of work; AI + HITL for the remaining ${ap}%.</b> Blended cost ${cents(r.blendedCost)}/txn &rarr; <b class="pos">${money(r.recSavingVsAsIs)}/mo</b> saved vs doing nothing. AI CapEx pays back in ${beTxt}.</p>
+      <p style="color:var(--muted)">Process sensitivity is ${S.sens}%. Raise it and more work stays human; lower it and automation expands.</p>`;
+  }
+  document.getElementById('rec').innerHTML=body;
+}
+
+function renderQual(r){
+  const rows=QUAL.map(q=>{
+    const pct=(q.v-1)/4*100;
+    return `<div class="qrow"><span class="qn">${q.name}<small>${q.sub}</small></span>
+      <span class="qtrack"><span class="qdot" style="left:${pct}%"></span></span></div>`;
+  }).join('');
+  const avg=QUAL.reduce((a,q)=>a+q.v,0)/QUAL.length;
+  const aiFav=(avg-1)/4*100;
+  const sens=S.sens;
+  let verdict;
+  if(aiFav>=60 && sens<=40) verdict=`<b class="pos">Automate confidently.</b> AI is qualitatively stronger (${aiFav.toFixed(0)}/100 AI-favorability) and sensitivity is low. Push the AI share up.`;
+  else if(aiFav>=55 && sens>60) verdict=`<b style="color:var(--warn)">Automate with a strong safety net.</b> AI is capable, but high sensitivity (${sens}%) means keep humans reviewing the risky slice - exactly the HITL split above.`;
+  else if(aiFav<45) verdict=`<b class="neg">Lead with humans.</b> On these dimensions humans still win (${aiFav.toFixed(0)}/100). Use AI only as assist, and revisit as capability improves.`;
+  else verdict=`<b>Balanced.</b> Neither side dominates qualitatively (${aiFav.toFixed(0)}/100). Let cost and the ${sens}% sensitivity split decide - see the recommendation above.`;
+  document.getElementById('qual').innerHTML=rows+
+    `<div class="qverdict"><div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="color:var(--muted);font-size:11.5px">Composite AI-favorability</span>
+      <span style="font-family:var(--mono);font-weight:600">${aiFav.toFixed(0)} / 100</span></div>${verdict}</div>`;
+}
+
+function renderReport(r,good,roiTxt,beTxt){
+  const cheapest=[['Human (as-is)',r.humanAsIs],['Human (optimized)',r.humanOpt],['AI + HITL',r.aiHitl]].sort((a,b)=>a[1]-b[1])[0][0];
+  const rec=r.recAllHuman
+    ? `<b class="neg">Do not automate yet.</b> Optimize the human process; AI + HITL is not cheaper than people at these unit economics and risk levels.`
+    : `<b class="pos">Adopt a ${(r.humanRetained*100).toFixed(0)}/${(r.aiShare*100).toFixed(0)} human/AI split.</b> Keep the most-sensitive work human, automate the rest with HITL. Grow volume past break-even to amortize CapEx faster; wire real telemetry to replace assumed risk rates with measured ones.`;
   document.getElementById('report').innerHTML=`
-    <p class="lede">One-page executive brief &middot; volume ${S.volume.toLocaleString()} txns/mo &middot; ${sharePct}% complex &rarr; <code>${r.flag.name}</code>, rest &rarr; <code>${r.fall.name}</code></p>
+    <p class="lede">One-page executive brief &middot; ${S.volume.toLocaleString()} txns/mo &middot; ${S.share}% complex &rarr; <code>${r.flag.name}</code>, rest &rarr; <code>${r.fall.name}</code></p>
     <h3>Executive Summary</h3>
     <ul><li>Net ROI: <b class="${good?'pos':'neg'}">${roiTxt}</b> per $ of AI run cost.</li>
-    <li>Break-even: ${beTxt==='not reachable'?'not reachable at current unit economics':beTxt}.</li>
-    <li>Total realized savings: <b class="${good?'pos':'neg'}">${money(r.monthlyNet)}/mo</b> (${money(r.monthlyNet*12)}/yr).</li></ul>
+    <li>AI CapEx payback: ${beTxt}.</li>
+    <li>Recommended saving: <b class="${r.recSavingVsAsIs>0?'pos':'neg'}">${money(r.recSavingVsAsIs)}/mo</b> vs staying all-human.</li></ul>
+    <h3>Human vs AI + HITL (cost / txn)</h3>
+    <ul><li>Human as-is: ${cents(r.humanAsIs)} &middot; Human optimized: ${cents(r.humanOpt)} &middot; AI + HITL: ${cents(r.aiHitl)}.</li>
+    <li>Cheapest model: <b>${cheapest}</b>.</li></ul>
     <h3>Unit Economics (CPO)</h3>
-    <ul><li>Legacy human cost: ${cents(S.legacy)}/txn.</li>
-    <li>Fully burdened AI cost: ${cents(r.cpo)}/txn &mdash; API ${cents(r.share*r.apiFlag+(1-r.share)*r.apiFall)} + infra ${cents(r.infra)}.</li>
-    <li>Gross saving: ${cents(r.gross)}/txn (${(r.gross/S.legacy*100).toFixed(0)}% cheaper).</li></ul>
-    <h3>Risk-Adjusted Adjustments</h3>
-    <ul><li>Hallucination Tax: <b class="neg">-${cents(r.tax)}/txn</b> (incident ${cents(r.incidentTax)} + HITL ${cents(r.hitlTax)}).</li>
-    <li>Maintenance OpEx: -${cents(r.opexPerTxn)}/txn. Amortized CapEx: -${cents(r.amortPerTxn)}/txn.</li>
-    <li>Net after risk: <b class="${good?'pos':'neg'}">${cents(r.net)}/txn</b> &rarr; ${money(r.monthlyNet)}/mo.</li></ul>
-    <h3>Velocity &amp; Throughput</h3>
-    <ul><li>Capital reclaimed from HITL reduction: ${money(r.hitlReclaimed)}/mo of review capacity freed.</li>
-    <li>Monthly AI run cost: ${money(r.monthlyRun)} for ${S.volume.toLocaleString()} txns.</li></ul>
-    <h3>Strategic Recommendation</h3><p>${rec}</p>`;
+    <ul><li>Fully burdened AI cost: ${cents(r.cpo)}/txn (API + infra), before risk.</li>
+    <li>Hallucination Tax: <b class="neg">-${cents(r.tax)}/txn</b>.</li></ul>
+    <h3>Recommended Approach</h3><p>${rec}</p>`;
 }
 
-// ---- markdown export (mirrors report.py structure) ------------------------
+// ---- markdown export ------------------------------------------------------
 function reportMarkdown(){
   const r=compute();
   const roiTxt=isFinite(r.roi)?r.roi.toFixed(1)+'%':'positive (unbounded)';
-  const beTxt=isFinite(r.breakeven)?Math.round(r.breakeven).toLocaleString()+' txns/month':'not reachable at current unit economics';
-  const rec = r.net<=0
-    ? '- **Do not scale yet.** Net saving per transaction is non-positive. Route more simple tasks to the fallback tier and tighten guardrails before adding volume.'
-    : `- **Scale.** Unit economics are positive at ${cents(r.net)}/txn. Lever: ${r.cpo>r.tax?'shift more traffic to fallback':'shrink the Hallucination Tax'}. Grow past break-even; wire real telemetry to measure rates.`;
-  return `# AI Operational Value Realization
+  const beTxt=isFinite(r.breakevenMonth)?r.breakevenMonth.toFixed(1)+' months':'never';
+  const rec=r.recAllHuman
+    ?`- **Do not automate yet.** Optimize the human process; AI + HITL is not cheaper than people here.`
+    :`- **Adopt a ${(r.humanRetained*100).toFixed(0)}/${(r.aiShare*100).toFixed(0)} human/AI split.** Keep the most-sensitive work human, automate the rest with HITL.`;
+  return `# AI ROI Calculator - Human vs AI + HITL
 
-_One-page executive brief. Volume basis: ${S.volume.toLocaleString()} txns/month._
+_Volume ${S.volume.toLocaleString()} txns/month. Process sensitivity ${S.sens}%._
 
 ## Executive Summary
 - **Net ROI:** ${roiTxt} per dollar of AI run cost.
-- **Break-even:** ${beTxt}.
-- **Total realized savings:** **${money(r.monthlyNet)}/month** (${money(r.monthlyNet*12)}/yr).
+- **AI CapEx payback:** ${beTxt}.
+- **Recommended saving:** ${money(r.recSavingVsAsIs)}/month vs staying all-human.
+
+## Human vs AI + HITL (cost / txn)
+| Operating model | Cost / txn | Cost / month |
+|---|--:|--:|
+| Human (as-is) | ${cents(r.humanAsIs)} | ${money(r.humanAsIs*S.volume)} |
+| Human (optimized) | ${cents(r.humanOpt)} | ${money(r.humanOpt*S.volume)} |
+| AI + HITL | ${cents(r.aiHitl)} | ${money(r.aiHitl*S.volume)} |
 
 ## Unit Economics (CPO)
-- **Legacy human cost:** ${cents(S.legacy)}/txn.
-- **Fully burdened AI cost (CPO):** ${cents(r.cpo)}/txn.
-- **Gross saving:** ${cents(r.gross)}/txn (${(r.gross/S.legacy*100).toFixed(0)}% cheaper).
-- Mix: ${(r.share*100).toFixed(0)}% complex -> ${r.flag.name}, rest -> ${r.fall.name}.
+- Fully burdened AI cost: ${cents(r.cpo)}/txn.
+- Hallucination Tax: -${cents(r.tax)}/txn.
 
-## Risk-Adjusted Adjustments
-- **Hallucination Tax:** -${cents(r.tax)}/txn (incident ${cents(r.incidentTax)} + HITL ${cents(r.hitlTax)}).
-- **Maintenance OpEx:** -${cents(r.opexPerTxn)}/txn.
-- **Net saving after risk:** **${cents(r.net)}/txn** -> ${money(r.monthlyNet)}/month.
-
-## Velocity & Throughput
-- **Capital reclaimed from HITL reduction:** ${money(r.hitlReclaimed)}/month.
-- **Monthly AI run cost:** ${money(r.monthlyRun)} for ${S.volume.toLocaleString()} txns.
-
-## Strategic Recommendation
+## Recommended Approach
 ${rec}
+- Blended cost: ${cents(r.blendedCost)}/txn.
 `;
 }
 
 // ---- actions --------------------------------------------------------------
 document.getElementById('copyReport').addEventListener('click',e=>{
   navigator.clipboard.writeText(reportMarkdown()).then(()=>{
-    e.target.textContent='Copied ✓'; setTimeout(()=>e.target.textContent='Copy executive report (Markdown)',1400);
-  });
+    e.target.textContent='Copied ✓'; setTimeout(()=>e.target.textContent='Copy executive report (Markdown)',1400);});
 });
 document.getElementById('reset').addEventListener('click',()=>{
-  S={...BASE}; MODELS.forEach((m,i)=>{const d=[
-    {in:15,out:75},{in:10,out:30},{in:1.25,out:10},{in:0,out:0},{in:0.25,out:2},{in:0.30,out:2.50}][i];
-    m.in=d.in;m.out=d.out;});
-  buildModelRows(); wire(); recompute();
+  S={...BASE}; MODELS=MODELS_DEFAULT.map(m=>({...m})); QUAL=QUAL_DEFAULT.map(q=>({...q}));
+  buildModelRows(); buildQual(); wire(); recompute();
 });
 
 // ---- init -----------------------------------------------------------------
-buildModelRows(); wire(); recompute();
+buildModelRows(); buildQual(); wire(); recompute();
 </script>
 </body>
 </html>
